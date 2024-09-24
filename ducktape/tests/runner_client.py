@@ -280,6 +280,7 @@ class RunnerClient(object):
             # Release test_context resources only after creating the result and finishing logging activity
             # The Sender object uses the same logger, so we postpone closing until after the finished message is sent
             self.test_context.close()
+            print("SHIV DEBUG: AFTER: TEST_CONTEXT CLOSED")
             self.all_services = None
             self.test_context = None
             self.test = None
