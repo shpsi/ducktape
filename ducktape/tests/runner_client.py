@@ -39,6 +39,7 @@ def run_client(*args, **kwargs):
     client = RunnerClient(*args, **kwargs)
     client.ready()
     client.run()
+    print("SHIV DEBUG: AFTER: RUN CLIENT")
 
 
 class Sender(object):
