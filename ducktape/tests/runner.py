@@ -357,7 +357,7 @@ class TestRunner(object):
         # Join on the finished test process
         print("SHIV DEBUG: START: BEFORE CLIENT_PROC JOIN")
         print(self._client_procs[test_key])
-        self._client_procs[test_key].join()
+        self._client_procs[test_key].terminate()
         print("SHIV DEBUG: JOINED")
         # Report partial result summaries - it is helpful to have partial test reports available if the
         # ducktape process is killed with a SIGKILL partway through
