@@ -228,18 +228,24 @@ class TestRunner(object):
                         self.scheduler.remove(next_test_context)
                         self._run_single_test(next_test_context)
 
+                print("SHIV DEBUG: BEFORE: IF CHECK RUNNER")
                 if self._expect_client_requests:
                     try:
+                        print("SHIV DEBUG: BEFORE: EVENT RECIEVE")
                         event = self.receiver.recv(timeout=self.session_context.test_runner_timeout)
+                        print("SHIV DEBUG: DURING: EVENT RECIEVE")
                         self._handle(event)
+                        print("SHIV DEBUG: AFTER: HANDLE EVENT")
                     except Exception as e:
                         err_str = "Exception receiving message: %s: %s" % (str(type(e)), str(e))
                         err_str += "\n" + traceback.format_exc(limit=16)
                         self._log(logging.ERROR, err_str)
 
                         # All processes are on the same machine, so treat communication failure as a fatal error
+                        print("SHIV DEBUG: BEFORE: procs terminated")
                         for proc in self._client_procs.values():
                             proc.terminate()
+                        print("SHIV DEBUG: AFTER: procs terminated")
                         self._client_procs = {}
                         raise
             except KeyboardInterrupt:
@@ -283,6 +289,7 @@ class TestRunner(object):
 
         self._client_procs[test_key] = proc
         proc.start()
+        print("SHIV DEBUG: AFTER: PROC START RUNNER")
 
     def _preallocate_subcluster(self, test_context):
         """Preallocate the subcluster which will be used to run the test.
