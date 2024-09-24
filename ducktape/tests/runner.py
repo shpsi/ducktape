@@ -206,7 +206,9 @@ class TestRunner(object):
         self._log(logging.INFO, "running %d tests..." % len(self.scheduler))
         while self._ready_to_trigger_more_tests or self._expect_client_requests:
             try:
+                print("SHIV DEBUG: _expect_client_requests: %s", self._expect_client_requests)
                 while self._ready_to_trigger_more_tests:
+                    print("SHIV DEBUG: _ready_to_trigger_more_tests: %s", self._ready_to_trigger_more_tests)
                     next_test_context = self.scheduler.peek()
                     try:
                         self._preallocate_subcluster(next_test_context)
