@@ -337,6 +337,7 @@ class TestRunner(object):
         self._log(event["log_level"], event["message"])
 
     def _handle_finished(self, event):
+        print("SHIV DEBUG: START: HANDLE FINISHED")
         test_key = TestKey(event["test_id"], event["test_index"])
         self.receiver.send(self.event_response.finished(event))
 
@@ -344,17 +345,20 @@ class TestRunner(object):
         if result.test_status == FAIL and self.exit_first:
             self.stop_testing = True
 
+        print("SHIV DEBUG: START: STEP 1")
         # Transition this test from running to finished
         del self.active_tests[test_key]
         self.finished_tests[test_key] = event
         self.results.append(result)
 
         # Free nodes used by the test
+        print("SHIV DEBUG: START: STEP 2")
         subcluster = self._test_cluster[test_key]
         self.cluster.free(subcluster.nodes)
         del self._test_cluster[test_key]
 
         # Join on the finished test process
+        print("SHIV DEBUG: START: STEP 3")
         self._client_procs[test_key].join()
 
         # Report partial result summaries - it is helpful to have partial test reports available if the
