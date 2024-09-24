@@ -206,7 +206,9 @@ class TestRunner(object):
         self._log(logging.INFO, "running %d tests..." % len(self.scheduler))
         while self._ready_to_trigger_more_tests or self._expect_client_requests:
             try:
+                print("SHIV DEBUG: _expect_client_requests: %s", self._expect_client_requests)
                 while self._ready_to_trigger_more_tests:
+                    print("SHIV DEBUG: _ready_to_trigger_more_tests: %s", self._ready_to_trigger_more_tests)
                     next_test_context = self.scheduler.peek()
                     try:
                         self._preallocate_subcluster(next_test_context)
@@ -228,18 +230,24 @@ class TestRunner(object):
                         self.scheduler.remove(next_test_context)
                         self._run_single_test(next_test_context)
 
+                print("SHIV DEBUG: BEFORE: IF CHECK RUNNER")
                 if self._expect_client_requests:
                     try:
+                        print("SHIV DEBUG: BEFORE: EVENT RECIEVE")
                         event = self.receiver.recv(timeout=self.session_context.test_runner_timeout)
+                        print("SHIV DEBUG: DURING: EVENT RECIEVE")
                         self._handle(event)
+                        print("SHIV DEBUG: AFTER: HANDLE EVENT")
                     except Exception as e:
                         err_str = "Exception receiving message: %s: %s" % (str(type(e)), str(e))
                         err_str += "\n" + traceback.format_exc(limit=16)
                         self._log(logging.ERROR, err_str)
 
                         # All processes are on the same machine, so treat communication failure as a fatal error
+                        print("SHIV DEBUG: BEFORE: procs terminated")
                         for proc in self._client_procs.values():
                             proc.terminate()
+                        print("SHIV DEBUG: AFTER: procs terminated")
                         self._client_procs = {}
                         raise
             except KeyboardInterrupt:
@@ -248,8 +256,10 @@ class TestRunner(object):
                           "Received KeyboardInterrupt. Now waiting for currently running tests to finish...")
                 self.stop_testing = True
 
+        print("SHIV DEBUG: BEFORE: PROC_JOIN")
         for proc in self._client_procs.values():
             proc.join()
+        print("SHIV DEBUG: AFTER: PROC_JOIN")
         self.receiver.close()
 
         return self.results
@@ -281,6 +291,7 @@ class TestRunner(object):
 
         self._client_procs[test_key] = proc
         proc.start()
+        print("SHIV DEBUG: AFTER: PROC START RUNNER")
 
     def _preallocate_subcluster(self, test_context):
         """Preallocate the subcluster which will be used to run the test.
@@ -326,6 +337,7 @@ class TestRunner(object):
         self._log(event["log_level"], event["message"])
 
     def _handle_finished(self, event):
+        print("SHIV DEBUG: START: HANDLE FINISHED")
         test_key = TestKey(event["test_id"], event["test_index"])
         self.receiver.send(self.event_response.finished(event))
 
@@ -333,17 +345,20 @@ class TestRunner(object):
         if result.test_status == FAIL and self.exit_first:
             self.stop_testing = True
 
+        print("SHIV DEBUG: START: STEP 1")
         # Transition this test from running to finished
         del self.active_tests[test_key]
         self.finished_tests[test_key] = event
         self.results.append(result)
 
         # Free nodes used by the test
+        print("SHIV DEBUG: START: STEP 2")
         subcluster = self._test_cluster[test_key]
         self.cluster.free(subcluster.nodes)
         del self._test_cluster[test_key]
 
         # Join on the finished test process
+        print("SHIV DEBUG: START: STEP 3")
         self._client_procs[test_key].join()
 
         # Report partial result summaries - it is helpful to have partial test reports available if the
@@ -354,8 +369,10 @@ class TestRunner(object):
             HTMLSummaryReporter(test_results),
             JSONReporter(test_results)
         ]
+        print("SHIV DEBUG: BEFORE: R REPORT")
         for r in reporters:
             r.report()
+        print("SHIV DEBUG: AFTER: R REPORT")
 
         if self._should_print_separator:
             terminal_width, y = get_terminal_size()
