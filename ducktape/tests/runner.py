@@ -258,7 +258,8 @@ class TestRunner(object):
 
         print("SHIV DEBUG: BEFORE: PROC_JOIN")
         for proc in self._client_procs.values():
-            proc.join()
+            if proc.is_alive():
+                proc.join()
         print("SHIV DEBUG: AFTER: PROC_JOIN")
         self.receiver.close()
 
