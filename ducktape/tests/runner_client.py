@@ -21,6 +21,7 @@ import time
 import traceback
 from typing import List, Mapping
 import zmq
+import psutil
 
 from ducktape.services.service import MultiRunServiceIdFactory, service_id_factory
 from ducktape.services.service_registry import ServiceRegistry
@@ -179,12 +180,20 @@ class RunnerClient(object):
     def send(self, event):
         return self.sender.send(event)
 
+    def _kill_all_child_processes(self, send_signal=signal.SIGTERM):
+        current_process = psutil.Process()
+        # if this client has any children - kill them (for instances background service)
+        children = current_process.children(recursive=True)
+        for child in children:
+            self.logger.warning(f"process {repr(child)} did not terminate on its own, killing with {send_signal}")
+            child.send_signal(send_signal)
+
     def _sigterm_handler(self, signum, frame):
         """Translate SIGTERM to SIGINT on this process
 
         python will treat SIGINT as a Keyboard exception. Exception handling does the rest.
         """
-        os.kill(os.getpid(), signal.SIGINT)
+        self._kill_all_child_processes(signal.SIGINT)
 
     def _collect_test_context(self, directory, file_name, cls_name, method_name, injected_args):
         loader = TestLoader(self.session_context, self.logger, injected_args=injected_args, cluster=self.cluster)
@@ -278,6 +287,8 @@ class RunnerClient(object):
             self._do_safely(lambda: self.send(self.message.finished(result=result)),
                             "Problem sending FINISHED message for " + str(self.test_metadata) + ":\n")
             print("SHIV DEBUG: AFTER: DO SAFELY")
+            self._kill_all_child_processes()
+            print("SHIV DEBUG: AFTER: KILL_ALL CHILD PROC")
             # Release test_context resources only after creating the result and finishing logging activity
             # The Sender object uses the same logger, so we postpone closing until after the finished message is sent
             self.test_context.close()
