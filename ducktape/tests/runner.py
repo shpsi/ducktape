@@ -141,6 +141,7 @@ class TestRunner(object):
         while time.time() - start <= timeout:
             if not process.is_alive():
                 self.client_report[process_key]["status"] = "FINISHED"
+                process.join()
                 break
             time.sleep(.1)
         else:
@@ -150,7 +151,6 @@ class TestRunner(object):
                       f"after waiting {timeout}s, process {process.name} failed to complete.  Terminating...")
             self._terminate_process(process)
             self.client_report[process_key]["status"] = "TERMINATED"
-        process.join()
         self.client_report[process_key]["exitcode"] = process.exitcode
         self.client_report[process_key]["runner_end_time"] = time.time()
         assert not process.is_alive()
