@@ -290,6 +290,7 @@ class TestRunner(object):
             self._log(logging.WARNING, f"Some clients failed to clean up, waiting 10min to join: {self._client_procs}")
         for proc in self._client_procs:
             self._join_test_process(proc, self.finish_join_timeout)
+
         print("SHIV DEBUG: AFTER: PROC_JOIN")
         self.receiver.close()
 
@@ -326,6 +327,7 @@ class TestRunner(object):
         self.client_report[test_key]["pid"] = proc.pid
         self.client_report[test_key]["name"] = proc.name
         self.client_report[test_key]["runner_start_time"] = time.time()
+
         print("SHIV DEBUG: AFTER: PROC START RUNNER")
 
     def _preallocate_subcluster(self, test_context):
@@ -372,6 +374,7 @@ class TestRunner(object):
         self._log(event["log_level"], event["message"])
 
     def _handle_finished(self, event):
+        print("SHIV DEBUG: START: HANDLE FINISHED")
         test_key = TestKey(event["test_id"], event["test_index"])
         self.receiver.send(self.event_response.finished(event))
 
@@ -379,12 +382,14 @@ class TestRunner(object):
         if result.test_status == FAIL and self.exit_first:
             self.stop_testing = True
 
+        print("SHIV DEBUG: START: STEP 1")
         # Transition this test from running to finished
         del self.active_tests[test_key]
         self.finished_tests[test_key] = event
         self.results.append(result)
 
         # Free nodes used by the test
+        print("SHIV DEBUG: START: STEP 2")
         subcluster = self._test_cluster[test_key]
         self.cluster.free(subcluster.nodes)
         del self._test_cluster[test_key]
@@ -393,6 +398,7 @@ class TestRunner(object):
         print("SHIV DEBUG: START: BEFORE CLIENT_PROC JOIN")
         self._join_test_process(test_key, timeout=self.finish_join_timeout)
         print("SHIV DEBUG: JOINED")
+
         # Report partial result summaries - it is helpful to have partial test reports available if the
         # ducktape process is killed with a SIGKILL partway through
         test_results = copy.copy(self.results)  # shallow copy
